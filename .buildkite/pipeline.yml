@@ -4,11 +4,7 @@ env:
   ANKA_MOJAVE_TEMPLATE: "10.14.4_6C_14G_40G"
   ANKA_TEMPLATE_TAG: "clean::cicd::git-ssh::nas::brew::buildkite-agent-3.11.2"
   CHECKSUMABLE: "scripts/eosio_build*"
-<<<<<<< HEAD
-  MAC_TAG: "eosio_1.9.0-develop"
-=======
-  MAC_TAG: "eosio_2-5"
->>>>>>> develop
+  MAC_TAG: "eosio_1.9.0-developv2"
   WORKDIR: "/data/job"
 
 steps:
@@ -89,11 +85,7 @@ steps:
       docker#v3.1.0:
         shell: ["/bin/bash", "-i", "-e", "-c"]
         debug: true
-<<<<<<< HEAD
         image: "436617320021.dkr.ecr.us-west-2.amazonaws.com/ci:amazonlinux2_1-9-0-develop"
-=======
-        image: "436617320021.dkr.ecr.us-west-2.amazonaws.com/ci:amazonlinux2_2-5"
->>>>>>> develop
         propagate-environment: true
         workdir: $WORKDIR
     timeout: 120
@@ -114,11 +106,7 @@ steps:
       docker#v3.2.0:
         shell: ["/bin/bash", "-i", "-e", "-c"]
         debug: true
-<<<<<<< HEAD
         image: "436617320021.dkr.ecr.us-west-2.amazonaws.com/ci:centos7_1-9-0-develop"
-=======
-        image: "436617320021.dkr.ecr.us-west-2.amazonaws.com/ci:centos7_2-5"
->>>>>>> develop
         propagate-environment: true
         workdir: $WORKDIR
     timeout: 120
@@ -139,11 +127,7 @@ steps:
       docker#v3.2.0:
         shell: ["/bin/bash", "-i", "-e", "-c"]
         debug: true
-<<<<<<< HEAD
         image: "436617320021.dkr.ecr.us-west-2.amazonaws.com/ci:ubuntu16_1-9-0-develop"
-=======
-        image: "436617320021.dkr.ecr.us-west-2.amazonaws.com/ci:ubuntu16_2-5"
->>>>>>> develop
         propagate-environment: true
         workdir: $WORKDIR
     timeout: 120
@@ -164,11 +148,7 @@ steps:
       docker#v3.2.0:
         shell: ["/bin/bash", "-i", "-e", "-c"]
         debug: true
-<<<<<<< HEAD
         image: "436617320021.dkr.ecr.us-west-2.amazonaws.com/ci:ubuntu18_1-9-0-develop"
-=======
-        image: "436617320021.dkr.ecr.us-west-2.amazonaws.com/ci:ubuntu18_2-5"
->>>>>>> develop
         propagate-environment: true
         workdir: $WORKDIR
     timeout: 120
@@ -242,11 +222,7 @@ steps:
       docker#v3.2.0:
         shell: ["/bin/bash", "-i", "-e", "-c"]
         debug: true
-<<<<<<< HEAD
         image: "436617320021.dkr.ecr.us-west-2.amazonaws.com/ci:amazonlinux2_1-9-0-develop"
-=======
-        image: "436617320021.dkr.ecr.us-west-2.amazonaws.com/ci:amazonlinux2_2-5"
->>>>>>> develop
         propagate-environment: true
         workdir: $WORKDIR
     timeout: 60
@@ -266,11 +242,7 @@ steps:
       docker#v3.2.0:
         shell: ["/bin/bash", "-i", "-e", "-c"]
         debug: true
-<<<<<<< HEAD
         image: "436617320021.dkr.ecr.us-west-2.amazonaws.com/ci:amazonlinux2_1-9-0-develop"
-=======
-        image: "436617320021.dkr.ecr.us-west-2.amazonaws.com/ci:amazonlinux2_2-5"
->>>>>>> develop
         propagate-environment: true
         workdir: $WORKDIR
     timeout: 60
@@ -291,11 +263,7 @@ steps:
       docker#v3.2.0:
         shell: ["/bin/bash", "-i", "-e", "-c"]
         debug: true
-<<<<<<< HEAD
         image: "436617320021.dkr.ecr.us-west-2.amazonaws.com/ci:centos7_1-9-0-develop"
-=======
-        image: "436617320021.dkr.ecr.us-west-2.amazonaws.com/ci:centos7_2-5"
->>>>>>> develop
         propagate-environment: true
         workdir: $WORKDIR
     timeout: 60
@@ -315,11 +283,7 @@ steps:
       docker#v3.2.0:
         shell: ["/bin/bash", "-i", "-e", "-c"]
         debug: true
-<<<<<<< HEAD
         image: "436617320021.dkr.ecr.us-west-2.amazonaws.com/ci:centos7_1-9-0-develop"
-=======
-        image: "436617320021.dkr.ecr.us-west-2.amazonaws.com/ci:centos7_2-5"
->>>>>>> develop
         propagate-environment: true
         workdir: $WORKDIR
     timeout: 60
@@ -340,11 +304,7 @@ steps:
       docker#v3.2.0:
         shell: ["/bin/bash", "-i", "-e", "-c"]
         debug: true
-<<<<<<< HEAD
         image: "436617320021.dkr.ecr.us-west-2.amazonaws.com/ci:ubuntu16_1-9-0-develop"
-=======
-        image: "436617320021.dkr.ecr.us-west-2.amazonaws.com/ci:ubuntu16_2-5"
->>>>>>> develop
         propagate-environment: true
         workdir: $WORKDIR
     timeout: 60
@@ -364,11 +324,7 @@ steps:
       docker#v3.2.0:
         shell: ["/bin/bash", "-i", "-e", "-c"]
         debug: true
-<<<<<<< HEAD
         image: "436617320021.dkr.ecr.us-west-2.amazonaws.com/ci:ubuntu16_1-9-0-develop"
-=======
-        image: "436617320021.dkr.ecr.us-west-2.amazonaws.com/ci:ubuntu16_2-5"
->>>>>>> develop
         propagate-environment: true
         workdir: $WORKDIR
     timeout: 60
@@ -388,11 +344,7 @@ steps:
       docker#v3.2.0:
         shell: ["/bin/bash", "-i", "-e", "-c"]
         debug: true
-<<<<<<< HEAD
         image: "436617320021.dkr.ecr.us-west-2.amazonaws.com/ci:ubuntu18_1-9-0-develop"
-=======
-        image: "436617320021.dkr.ecr.us-west-2.amazonaws.com/ci:ubuntu18_2-5"
->>>>>>> develop
         propagate-environment: true
         workdir: $WORKDIR
     timeout: 60
@@ -412,11 +364,7 @@ steps:
       docker#v3.2.0:
         shell: ["/bin/bash", "-i", "-e", "-c"]
         debug: true
-<<<<<<< HEAD
         image: "436617320021.dkr.ecr.us-west-2.amazonaws.com/ci:ubuntu18_1-9-0-develop"
-=======
-        image: "436617320021.dkr.ecr.us-west-2.amazonaws.com/ci:ubuntu18_2-5"
->>>>>>> develop
         propagate-environment: true
         workdir: $WORKDIR
     timeout: 60
@@ -463,11 +411,7 @@ steps:
       docker#v3.2.0:
         shell: ["/bin/bash", "-i", "-e", "-c"]
         debug: true
-<<<<<<< HEAD
         image: "436617320021.dkr.ecr.us-west-2.amazonaws.com/ci:centos7_1-9-0-develop"
-=======
-        image: "436617320021.dkr.ecr.us-west-2.amazonaws.com/ci:centos7_2-5"
->>>>>>> develop
         propagate-environment: true
         workdir: $WORKDIR
     env:
@@ -496,11 +440,7 @@ steps:
       docker#v3.2.0:
         shell: ["/bin/bash", "-i", "-e", "-c"]
         debug: true
-<<<<<<< HEAD
         image: "436617320021.dkr.ecr.us-west-2.amazonaws.com/ci:ubuntu16_1-9-0-develop"
-=======
-        image: "436617320021.dkr.ecr.us-west-2.amazonaws.com/ci:ubuntu16_2-5"
->>>>>>> develop
         propagate-environment: true
         workdir: $WORKDIR
     env:
@@ -529,11 +469,7 @@ steps:
       docker#v3.2.0:
         shell: ["/bin/bash", "-i", "-e", "-c"]
         debug: true
-<<<<<<< HEAD
         image: "436617320021.dkr.ecr.us-west-2.amazonaws.com/ci:ubuntu18_1-9-0-develop"
-=======
-        image: "436617320021.dkr.ecr.us-west-2.amazonaws.com/ci:ubuntu18_2-5"
->>>>>>> develop
         propagate-environment: true
         workdir: $WORKDIR
     env:
