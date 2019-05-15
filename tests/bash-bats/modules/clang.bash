@@ -4,13 +4,14 @@ load ../helpers/functions
 @test "${TEST_LABEL} > Testing CLANG" {
 
     run bash -c "printf \"y\n%.0s\" {1..100} | ./$SCRIPT_LOCATION"
-
     if [[ $NAME == "Darwin" ]]; then
         ## CLANG already exists (c++/default)
+        [[ ! -z $(echo "${output}" | grep "PIN_COMPILER: true") ]] || exit
         [[ ! -z $(echo "${output}" | grep "DCMAKE_CXX_COMPILER='c++'") ]] || exit
         [[ ! -z $(echo "${output}" | grep "DCMAKE_C_COMPILER='cc'") ]] || exit
     elif [[ $NAME == "Ubuntu" ]]; then
         ## CLANG already exists (c++/default) (Ubuntu doesn't have clang>7, so we need to make sure it installs Clang 8)
+        [[ ! -z $(echo "${output}" | grep "PIN_COMPILER: true") ]] || exit
         [[ ! -z $(echo "${output}" | grep "Unable to find C++17 support") ]] || exit
         [[ ! -z $(echo "${output}" | grep "Clang 8 successfully installed") ]] || exit
         [[ ! -z $(echo "${output}" | grep "$CLANG_ROOT") ]] || exit

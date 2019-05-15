@@ -4,6 +4,10 @@ load helpers/general
 SCRIPT_LOCATION="scripts/eosio_build.bash"
 TEST_LABEL="[eosio_build]"
 
+###################################################################
+# ON MAC YOU NEED TO FULLY UNINSTALL EOSIO BEFORE THESE WILL PASS #
+###################################################################
+
 # A helper function is available to show output and status: `debug`
 @test "${TEST_LABEL} > Testing arguments/options" {
 
