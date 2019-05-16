@@ -1,10 +1,3 @@
-# Obtain dependency versions; Must come first in the script
-. ./scripts/.environment
-# Load general helpers
-. ./scripts/helpers/general.bash
-# Load helper for functions that allow us to obtain cores, memory, disk space, etc
-. ./scripts/helpers/system.bash
-
 # Checks for Arch and OS + Support for tests setting them manually
 ## Necessary for linux exclusion while running bats tests/bash-bats/*.bash
 [[ -z "${ARCH}" ]] && export ARCH=$( uname )
@@ -18,10 +11,19 @@ if [[ -z "${NAME}" ]]; then
     fi
 fi
 
-[[ $ARCH == "Darwin" ]] && export CTEST_BIN=ctest || export CTEST_BIN=$BIN_DIR/ctest
+# Setup yum and apt variables
+if [[ $NAME =~ "Amazon Linux" ]] || [[ $NAME == "CentOS Linux" ]]; then
+    if ! YUM=$( command -v yum 2>/dev/null ); then echo "${COLOR_RED}YUM must be installed to compile EOS.IO${COLOR_NC}" && exit 1; fi
+elif [[ $NAME == "Ubuntu" ]]; then
+    if ! APTGET=$( command -v apt-get 2>/dev/null ); then echo "${COLOR_RED}APT-GET must be installed to compile EOS.IO${COLOR_NC}" && exit 1; fi
+fi
 
-# Test that which is on the system before proceeding
-which ls &>/dev/null || ( echo "${COLOR_RED}Please install the 'which' command before proceeding!${COLOR_NC}"; $DRYRUN || exit 1 )
+# Obtain dependency versions; Must come first in the script
+. ./scripts/.environment
+# Load general helpers
+. ./scripts/helpers/general.bash
+
+[[ $ARCH == "Darwin" ]] && export CTEST_BIN=ctest || export CTEST_BIN=$BIN_DIR/ctest
 
 function setup() {
     if $VERBOSE; then
@@ -40,18 +42,14 @@ function setup() {
         echo "ENABLE_MONGO: ${ENABLE_MONGO}"
         echo "INSTALL_MONGO: ${INSTALL_MONGO}"
         echo "PIN_COMPILER: ${PIN_COMPILER}"
-        echo "BUILD_CLANG: ${BUILD_CLANG}"
     fi
     [[ -d $BUILD_DIR ]] && execute rm -rf $BUILD_DIR # cleanup old build directory
     # Be absolutely sure TEMP_DIR is set (we could do damage here)
     ## IF user set, they can be responsible for creating and then removing stale data
     if [[ $TEMP_DIR =~ "/tmp" ]]; then
         if [[ ! -d $TEMP_DIR ]]; then
-            DRYRUN_ORIGINAL=$DRYRUN
-            DRYRUN=false
-            execute mkdir -p $TEMP_DIR
-            execute rm -rf $TEMP_DIR/*
-            DRYRUN=$DRYRUN_ORIGINAL
+            execute-always mkdir -p $TEMP_DIR
+            execute-always rm -rf $TEMP_DIR/*
         fi
     fi
     execute mkdir -p $BUILD_DIR
@@ -86,7 +84,8 @@ function print_supported_linux_distros_and_exit() {
 function prompt-mongo-install() {
     if $ENABLE_MONGO; then
         while true; do
-            [[ $NONINTERACTIVE == false ]] && read -p "${COLOR_YELLOW}You have chosen to include MongoDB support. Do you want for us to install MongoDB as well? (y/n)?${COLOR_NC} " PROCEED
+            [[ $NONINTERACTIVE == false ]] && printf "${COLOR_YELLOW}You have chosen to include MongoDB support. Do you want for us to install MongoDB as well? (y/n)?${COLOR_NC}" && read -p " " PROCEED
+            echo ""
             case $PROCEED in
                 "" ) echo "What would you like to do?";;
                 0 | true | [Yy]* ) export INSTALL_MONGO=true; break;;
@@ -97,11 +96,48 @@ function prompt-mongo-install() {
     fi
 }
 
+function ensure-scl() {
+    echo "${COLOR_CYAN}[Ensuring installation of Centos Software Collections Repository]${COLOR_NC}" # Needed for rh-python36
+    SCL=$( rpm -qa | grep -E 'centos-release-scl-[0-9].*' || true )
+    if [[ -z "${SCL}" ]]; then
+        while true; do
+            [[ $NONINTERACTIVE == false ]] && read -p "${COLOR_YELLOW}Do you wish to install and enable the Centos Software Collections Repository? (y/n)?${COLOR_NC} " PROCEED
+            case $PROCEED in
+                "" ) echo "What would you like to do?";;
+                0 | true | [Yy]* ) execute $( [[ $CURRENT_USER == "root" ]] || echo /usr/bin/sudo -E ) $YUM -y --enablerepo=extras install centos-release-scl; break;;
+                1 | false | [Nn]* ) echo " - User aborted installation of required Centos Software Collections Repository."; exit 1;;
+                * ) echo "Please type 'y' for yes or 'n' for no.";;
+            esac
+        done
+    else
+        echo " - ${SCL} found."
+    fi
+}
+
+function ensure-devtoolset7() {
+    echo "${COLOR_CYAN}[Ensuring installation of devtoolset-7 (GCC7)]${COLOR_NC}"
+    DEVTOOLSET=$( rpm -qa | grep -E 'devtoolset-7-[0-9].*' || true )
+    if [[ -z "${DEVTOOLSET}" ]]; then
+        while true; do
+            [[ $NONINTERACTIVE == false ]] && printf "${COLOR_YELLOW}Do you wish to install it? (y/n)?${COLOR_NC}" && read -p " " PROCEED
+            echo ""
+            case $PROCEED in
+                "" ) echo "What would you like to do?";;
+                0 | true | [Yy]* ) install-package devtoolset-7; break;;
+                1 | false | [Nn]* ) echo " - User aborted installation of devtoolset-7."; break;;
+                * ) echo "Please type 'y' for yes or 'n' for no.";;
+            esac
+        done
+    else
+        echo " - ${DEVTOOLSET} found."
+    fi
+}
+
 function ensure-compiler() {
     export CXX=${CXX:-c++}
     export CC=${CC:-cc}
     if [[ $PIN_COMPILER == false ]]; then
-        which $CXX &>/dev/null || ( echo "${COLOR_RED} - Unable to find compiler \"${CXX}\"! Pass in the -P option if you wish for us to install it OR set \$CXX to the proper binary. ${COLOR_NC}"; exit 1 )
+        which $CXX &>/dev/null || ( echo "${COLOR_RED}Unable to find compiler \"${CXX}\"! Pass in the -P option if you wish for us to install it OR set \$CXX to the proper binary location. ${COLOR_NC}"; exit 1 )
         # readlink on mac differs from linux readlink (mac doesn't have -f)
         [[ $ARCH == "Linux" ]] && READLINK_COMMAND="readlink -f" || READLINK_COMMAND="readlink"
         COMPILER_TYPE=$( eval $READLINK_COMMAND $(which $CXX) )
@@ -128,7 +164,7 @@ function ensure-compiler() {
         while true; do
             echo "${COLOR_YELLOW}Unable to find C++17 support!${COLOR_NC}"
             echo "If you already have a C++17 compiler installed or would like to install your own, export CXX to point to the compiler of your choosing."
-            [[ $NONINTERACTIVE == false ]] && read -p "${COLOR_YELLOW}Do you wish to download and build C++17? (y/n)?${COLOR_NC} " PROCEED
+            [[ $NONINTERACTIVE == false ]] && printf "${COLOR_YELLOW}Do you wish to download and build C++17? (y/n)?${COLOR_NC}" && read -p " " PROCEED
             case $PROCEED in
                 "" ) echo "What would you like to do?";;
                 0 | true | [Yy]* )
@@ -143,6 +179,8 @@ function ensure-compiler() {
             esac
         done
     fi
+    $BUILD_CLANG && export PINNED_TOOLCHAIN="-DCMAKE_TOOLCHAIN_FILE='${BUILD_DIR}/pinned_toolchain.cmake'"
+    true # Needed due to weirdness
 }
 
 function ensure-cmake() {
@@ -284,7 +322,7 @@ function ensure-yum-packages() {
     if ! YUM=$( command -v yum 2>/dev/null ); then echo " - YUM must be installed to compile EOS.IO." && exit 1
     else echo "Yum installation found at ${YUM}."; fi
     while true; do
-        [[ $NONINTERACTIVE == false ]] && read -p "${COLOR_YELLOW}Do you wish to update YUM repositories? (y/n)?${COLOR_NC} " PROCEED
+        [[ $NONINTERACTIVE == false ]] && printf "${COLOR_YELLOW}Do you wish to update YUM repositories? (y/n)?${COLOR_NC}" && read -p " " PROCEED
         case $PROCEED in
             "" ) echo "What would you like to do?";;
             0 | true | [Yy]* )
@@ -299,30 +337,6 @@ function ensure-yum-packages() {
             * ) echo "Please type 'y' for yes or 'n' for no.";;
         esac
     done
-    if [[ $NAME == "CentOS Linux" ]]; then
-        echo "${COLOR_CYAN}[Ensuring installation of Centos Software Collections Repository]${COLOR_NC}" # Needed for rh-python36
-        SCL=$( rpm -qa | grep -E 'centos-release-scl-[0-9].*' || true )
-        if [[ -z "${SCL}" ]]; then
-            while true; do
-                [[ $NONINTERACTIVE == false ]] && read -p "${COLOR_YELLOW}Do you wish to install and enable the Centos Software Collections Repository? (y/n)?${COLOR_NC} " PROCEED
-                case $PROCEED in
-                    "" ) echo "What would you like to do?";;
-                    0 | true | [Yy]* )
-                        echo "Installing Centos Software Collections Repository..."
-                        if ! execute $( [[ $CURRENT_USER == "root" ]] || echo /usr/bin/sudo -E ) "${YUM}" -y --enablerepo=extras install centos-release-scl; then
-                            echo " - Centos Software Collections Repository installation failed." && exit 1;
-                        else
-                            echo " - Centos Software Collections Repository installed successfully."
-                        fi
-                    break;;
-                    1 | false | [Nn]* ) echo " - User aborted installation of required Centos Software Collections Repository."; exit;;
-                    * ) echo "Please type 'y' for yes or 'n' for no.";;
-                esac
-            done
-        else
-            echo " - ${SCL} found."
-        fi
-    fi
     echo "${COLOR_CYAN}[Ensuring for installed package dependencies]${COLOR_NC}"
     OLDIFS="$IFS"; IFS=$','
     while read -r testee tester; do
@@ -338,7 +352,7 @@ function ensure-yum-packages() {
     echo ""
     if [ "${COUNT}" -gt 1 ]; then
         while true; do
-            [[ $NONINTERACTIVE == false ]] && read -p "${COLOR_YELLOW}Do you wish to install missing dependencies? (y/n)?${COLOR_NC} " PROCEED
+            [[ $NONINTERACTIVE == false ]] && printf "${COLOR_YELLOW}Do you wish to install missing dependencies? (y/n)?${COLOR_NC}" && read -p " " PROCEED
             case $PROCEED in
                 "" ) echo "What would you like to do?";;
                 0 | true | [Yy]* )
@@ -386,13 +400,13 @@ function ensure-brew-packages() {
     if [ $COUNT -gt 1 ]; then
         echo ""
         while true; do
-            [[ $NONINTERACTIVE == false ]] && read -p "${COLOR_YELLOW}Do you wish to install missing dependencies? (y/n)${COLOR_NC} " PROCEED
+            [[ $NONINTERACTIVE == false ]] &7 printf "${COLOR_YELLOW}Do you wish to install missing dependencies? (y/n)${COLOR_NC}" && read -p " " PROCEED
             case $PROCEED in
                 "" ) echo "What would you like to do?";;
                 0 | true | [Yy]* )
                     execute "${XCODESELECT}" --install 2>/dev/null || true
                     while true; do
-                        [[ $NONINTERACTIVE == false ]] && read -p "${COLOR_YELLOW}Do you wish to update HomeBrew packages first? (y/n)${COLOR_NC} " PROCEED
+                        [[ $NONINTERACTIVE == false ]] && printf "${COLOR_YELLOW}Do you wish to update HomeBrew packages first? (y/n)${COLOR_NC}" && read -p " " PROCEED
                         case $PROCEED in
                             "" ) echo "What would you like to do?";;
                             0 | true | [Yy]* ) echo "[Updating HomeBrew]" && execute brew update; break;;
@@ -440,7 +454,7 @@ function ensure-apt-packages() {
     if [[ $COUNT > 0 ]]; then
         echo ""
         while true; do
-            [[ $NONINTERACTIVE == false ]] && read -p "${COLOR_YELLOW}Do you wish to install missing dependencies? (y/n)?${COLOR_NC} " PROCEED
+            [[ $NONINTERACTIVE == false ]] && printf "${COLOR_YELLOW}Do you wish to install missing dependencies? (y/n)?${COLOR_NC}" && read -p " " PROCEED
             case $PROCEED in
                 "" ) echo "What would you like to do?";;
                 0 | true | [Yy]* )

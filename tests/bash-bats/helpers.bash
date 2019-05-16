@@ -8,17 +8,6 @@ load helpers/general
 
 TEST_LABEL="[helpers]"
 
-@test "${TEST_LABEL} > which command" {
-  if [[ $ARCH == "Linux" ]] && ( [[ $NAME =~ "Amazon Linux" ]] || [[ $NAME == "CentOS Linux" ]] ); then
-    uninstall-package which
-    run ./scripts/helpers/eosio.bash
-    [[ ! -z $(echo "${output}" | grep "Please install the 'which' command") ]] || exit
-    [[ -z $(echo "${output}" | grep "User:") ]] || exit
-    # Install it
-    [[ -z $(echo "${output}" | grep "User:") ]] && install-package which
-  fi
-}
-
 @test "${TEST_LABEL} > execute > dryrun" {
   ## DRYRUN WORKS (true, false, and empty)
   run execute exit 1

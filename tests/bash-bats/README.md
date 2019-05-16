@@ -3,6 +3,7 @@
 For each bash script we have, there should be a separate .bash file within REPO_ROOT/tests/bash-bats/.
 
 - DRYRUN=true is required for all tests and automatically enabled. You can use this when you're manually running eosio_build.bash (`DRYRUN=true VERBOSE=true ./scripts/eosio_build.bash`)
+- execute-always gets around DRYRUN and runs stuff anyway (which installation uses this)
 
  - Running all tests: 
     ```

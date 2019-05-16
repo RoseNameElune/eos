@@ -1,0 +1,21 @@
+#!/usr/bin/env bats
+load ../helpers/functions
+
+@test "${TEST_LABEL} > MongoDB" {
+    # Existing MongoDB
+    if [[ $NAME == "CentOS Linux" ]] || [[ $NAME == "Amazon Linux" ]] || [[ $ARCH == "Darwin" ]]; then
+        run bash -c "printf \"y\nn\ny\ny\ny\n\" | ./$SCRIPT_LOCATION -m -P"
+    else
+        run bash -c "printf \"n\nn\ny\ny\n\" | ./$SCRIPT_LOCATION -m -P"
+    fi
+    [[ ! -z $(echo "${output}" | grep "Existing MongoDB will be used") ]] || exit
+    [[ -z $(echo "${output}" | grep "Ensuring MongoDB installation") ]] || exit
+    # Installing ours
+    if [[ $NAME == "CentOS Linux" ]] || [[ $NAME == "Amazon Linux" ]] || [[ $ARCH == "Darwin" ]]; then
+        run bash -c "printf \"y\ny\ny\ny\ny\n\" | ./$SCRIPT_LOCATION -m -P"
+    else
+        run bash -c "printf \"n\nn\ny\ny\n\" | ./$SCRIPT_LOCATION -m -P"
+    fi
+    [[ -z $(echo "${output}" | grep "Existing MongoDB will be used") ]] || exit
+    [[ ! -z $(echo "${output}" | grep "Ensuring MongoDB installation") ]] || exit
+}

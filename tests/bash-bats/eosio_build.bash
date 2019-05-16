@@ -11,19 +11,21 @@ TEST_LABEL="[eosio_build]"
 # A helper function is available to show output and status: `debug`
 @test "${TEST_LABEL} > Testing arguments/options" {
 
-    # Testing if no cpp or clang, since we need it to build cmake
-    if [[ $ARCH == "Linux" ]]; then
-        ( [[ $NAME == "CentOS Linux" ]] || [[ $NAME =~ "Amazon" ]] ) && uninstall-package gcc-c++ &>/dev/null # If c++ exists, it will fail
-        [[ $NAME =~ "Ubuntu" ]] && uninstall-package clang &>/dev/null
-        run bash -c "./$SCRIPT_LOCATION"
-        [[ ! -z $(echo "${output}" | grep "Unable to find compiler \"c++\"! Pass in the -P option if you wish for us to install it") ]] || exit
+    if [[ $ARCH == "Linux" ]] && ( [[ $NAME =~ "Amazon Linux" ]] || [[ $NAME == "CentOS Linux" ]] ); then
+        # which package isn't installed
+        uninstall-package which BYPASS_DRYRUN &>/dev/null
+        run bash -c "printf \"n\nn\n\" | ./scripts/eosio_build.bash"
+        [[ ! -z $(echo "${output}" | grep "EOSIO compiler checks require the 'which'") ]] || exit
+        [[ ! -z $(echo "${output}" | grep "Please install the 'which'") ]] || exit
     fi
+
+    # Anything after this point will have which installed!
 
     # -P with -y
     run bash -c "./$SCRIPT_LOCATION -y -P"
     [[ ! -z $(echo "${output}" | grep "PIN_COMPILER: true") ]] || exit
-    [[ ! -z $(echo "${output}" | grep "BUILD_CLANG: true") ]] || exit
     [[ "${output}" =~ -DCMAKE_TOOLCHAIN_FILE=\'.*/scripts/../build/pinned_toolchain.cmake\' ]] || exit
+    [[ "${output}" =~ "Clang 8 successfully installed" ]] || exit
     # -P with prompts
     run bash -c "printf \"n\n%.0s\" {1..100} | ./$SCRIPT_LOCATION -P"
     [[ "${output}" =~ .*User.aborted.* ]] || exit

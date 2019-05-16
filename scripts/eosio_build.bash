@@ -110,6 +110,20 @@ fi
 # Load eosio specific helper functions
 . ./scripts/helpers/eosio.bash
 
+# Test that which is on the system before proceeding
+if ! which ls &>/dev/null; then
+    while true; do
+        [[ $NONINTERACTIVE == false ]] && printf "${COLOR_YELLOW}EOSIO compiler checks require the 'which' package: Would you like for us to install it? (y/n)?${COLOR_NC}" && read -p " " PROCEED
+        echo ""
+        case $PROCEED in
+            "" ) echo "What would you like to do?";;
+            0 | true | [Yy]* ) install-package which BYPASS_DRYRUN &>/dev/null; break;;
+            1 | false | [Nn]* ) echo "${COLOR_RED}Please install the 'which' command before proceeding!${COLOR_NC}"; exit 1;;
+            * ) echo "Please type 'y' for yes or 'n' for no.";;
+        esac
+    done
+fi
+
 echo "Beginning build version: ${SCRIPT_VERSION}"
 echo "EOSIO version to install: ${EOSIO_VERSION}"
 echo "$( date -u )"
@@ -122,8 +136,6 @@ echo "Current branch: $( execute git rev-parse --abbrev-ref HEAD 2>/dev/null )"
 ensure-git-clone
 # If the same version has already been installed...
 previous-install-prompt
-# Handle clang/compiler
-ensure-compiler
 # Prompt user and asks if we should install mongo or not
 prompt-mongo-install
 # Setup directories and envs we need (must come last)
@@ -144,6 +156,7 @@ if [ "$ARCH" == "Linux" ]; then
    [[ ! -e /etc/os-release ]] && print_supported_linux_distros_and_exit
    case $NAME in
       "Amazon Linux AMI" | "Amazon Linux")
+         echo "${COLOR_CYAN}[Ensuring YUM installation]${COLOR_NC}"
          FILE="${REPO_ROOT}/scripts/eosio_build_amazonlinux.bash"
       ;;
       "CentOS Linux")
@@ -175,7 +188,6 @@ echo "${COLOR_CYAN}=============================================================
 echo "======================= ${COLOR_WHITE}Starting EOSIO Dependency Install${COLOR_CYAN} ===========================${COLOR_NC}"
 execute cd $SRC_DIR
 set_system_vars # JOBS, Memory, disk space available, etc
-$BUILD_CLANG && export PINNED_TOOLCHAIN="-DCMAKE_TOOLCHAIN_FILE='${BUILD_DIR}/pinned_toolchain.cmake'"
 . $FILE # Execute OS specific build file
 execute cd $REPO_ROOT
 

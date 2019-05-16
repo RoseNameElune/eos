@@ -11,41 +11,24 @@ echo "Disk space available: ${DISK_AVAIL}G"
 [[ "${DISK_AVAIL}" -lt "${DISK_MIN}" ]] && echo " - You must have at least ${DISK_MIN}GB of available storage to install EOSIO." && exit 1
 
 echo ""
-echo "${COLOR_CYAN}[Ensuring YUM installation]${COLOR_NC}"
-if ! YUM=$( command -v yum 2>/dev/null ); then echo " - YUM must be installed to compile EOS.IO." && exit 1
-else echo "Yum installation found at ${YUM}."; fi
 
+# Repo necessary for rh-python3 and devtoolset-7
+ensure-scl
+# GCC7 for Centos
+if [[ $PIN_COMPILER == false ]]; then
+	ensure-devtoolset7
+	if [[ -d /opt/rh/devtoolset-7 ]]; then
+		echo "${COLOR_CYAN}[Enabling Centos devtoolset-7 (so we can use GCC 7)]${COLOR_NC}"
+		execute-always source /opt/rh/devtoolset-7/enable
+		echo " - ${COLOR_GREEN}Centos devtoolset-7 successfully enabled!${COLOR_NC}"
+	fi
+fi
+# Handle clang/compiler
+ensure-compiler
+echo ""
 # Ensure packages exist
 ensure-yum-packages "${REPO_ROOT}/scripts/eosio_build_centos7_deps"
 echo ""
-echo "${COLOR_CYAN}[Ensuring installation of devtoolset-7]${COLOR_NC}"
-DEVTOOLSET=$( rpm -qa | grep -E 'devtoolset-7-[0-9].*' || true )
-if [[ -z "${DEVTOOLSET}" ]]; then
-	while true; do
-		[[ $NONINTERACTIVE == false ]] && read -p "${COLOR_YELLOW}Do you wish to install and enable devtoolset-7? (y/n)?${COLOR_NC} " PROCEED
-		case $PROCEED in
-			"" ) echo "What would you like to do?";;
-			0 | true | [Yy]* )
-				echo "Installing devtoolset-7..."
-				if ! execute $( [[ $CURRENT_USER == "root" ]] || echo /usr/bin/sudo -E ) "${YUM}" install -y devtoolset-7; then
-						echo " - Centos devtoolset-7 installation failed." && exit 1;
-				else
-						echo " - Centos devtoolset installed successfully."
-				fi
-			break;;
-			1 | false | [Nn]* ) echo " - User aborted installation of required devtoolset-7."; exit;;
-			* ) echo "Please type 'y' for yes or 'n' for no.";;
-		esac
-	done
-else
-	echo " - ${DEVTOOLSET} found."
-fi
-if $DRYRUN || [ -d /opt/rh/devtoolset-7 ]; then
-	echo "${COLOR_CYAN}[Enabling Centos devtoolset-7 (so we can use GCC 7)]${COLOR_NC}"
-	execute source /opt/rh/devtoolset-7/enable
-	echo " - ${COLOR_GREEN}Centos devtoolset-7 successfully enabled!${COLOR_NC}"
-	echo ""
-fi
 export PYTHON3PATH="/opt/rh/rh-python36"
 if $DRYRUN || [ -d $PYTHON3PATH ]; then
 	echo "${COLOR_CYAN}[Enabling python36]${COLOR_NC}"

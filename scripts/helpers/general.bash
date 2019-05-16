@@ -20,6 +20,12 @@ function execute() {
   ( [[ ! -z "${DRYRUN}" ]] && $DRYRUN ) || "$@"
 }
 
+
+function execute-always() {
+  ( [[ ! -z "${VERBOSE}" ]] && $VERBOSE ) && echo " - Executing: $@"
+  "$@"
+}
+
 function ensure-git-clone() {
   if [ ! -d "${REPO_ROOT}/.git" ]; then
     echo "This build script only works with sources cloned from git"
@@ -44,7 +50,8 @@ function previous-install-prompt() {
   if [[ -d $EOSIO_INSTALL_DIR ]]; then
     echo "EOSIO has already been installed into ${EOSIO_INSTALL_DIR}... It's suggested that you eosio_uninstall.bash before re-running this script."
     while true; do
-      [[ $NONINTERACTIVE == false ]] && read -p "${COLOR_YELLOW}Do you wish to proceed anyway? (y/n)${COLOR_NC} " PROCEED
+      [[ $NONINTERACTIVE == false ]] && printf "${COLOR_YELLOW}Do you wish to proceed anyway? (y/n)${COLOR_NC}" && read -p " " PROCEED
+      echo ""
       case $PROCEED in
         "" ) echo "What would you like to do?";;
         0 | true | [Yy]* ) break;;
@@ -53,4 +60,51 @@ function previous-install-prompt() {
       esac
 	  done
   fi
+}
+
+function set_system_vars() {
+    if [[ $ARCH == "Darwin" ]]; then
+        export OS_VER=$(sw_vers -productVersion)
+        export OS_MAJ=$(echo "${OS_VER}" | cut -d'.' -f1)
+        export OS_MIN=$(echo "${OS_VER}" | cut -d'.' -f2)
+        export OS_PATCH=$(echo "${OS_VER}" | cut -d'.' -f3)
+        export MEM_GIG=$(bc <<< "($(sysctl -in hw.memsize) / 1024000000)")
+        export DISK_INSTALL=$(df -h . | tail -1 | tr -s ' ' | cut -d\  -f1 || cut -d' ' -f1)
+        export blksize=$(df . | head -1 | awk '{print $2}' | cut -d- -f1)
+        export gbfactor=$(( 1073741824 / blksize ))
+        export total_blks=$(df . | tail -1 | awk '{print $2}')
+        export avail_blks=$(df . | tail -1 | awk '{print $4}')
+        export DISK_TOTAL=$((total_blks / gbfactor ))
+        export DISK_AVAIL=$((avail_blks / gbfactor ))
+    else
+        export DISK_INSTALL=$( df -h . | tail -1 | tr -s ' ' | cut -d\  -f1 )
+        export DISK_TOTAL_KB=$( df . | tail -1 | awk '{print $2}' )
+        export DISK_AVAIL_KB=$( df . | tail -1 | awk '{print $4}' )
+        export MEM_GIG=$(( ( ( $(cat /proc/meminfo | grep MemTotal | awk '{print $2}') / 1000 ) / 1000 ) ))
+        export DISK_TOTAL=$(( DISK_TOTAL_KB / 1048576 ))
+        export DISK_AVAIL=$(( DISK_AVAIL_KB / 1048576 ))
+    fi
+    export JOBS=$(( MEM_GIG > CPU_CORES ? CPU_CORES : MEM_GIG ))
+}
+
+function install-package() {
+  ORIGINAL_DRYRUN=$DRYRUN
+  [[ ! -z $2 ]] && DRYRUN=false
+  if [[ $ARCH == "Linux" ]]; then
+    ( [[ $NAME =~ "Amazon Linux" ]] || [[ $NAME == "CentOS Linux" ]] ) && execute $( [[ $CURRENT_USER == "root" ]] || echo /usr/bin/sudo -E ) ${YUM} install -y $1 || true
+    [[ $NAME =~ "Ubuntu" ]] && execute $( [[ $CURRENT_USER == "root" ]] || echo /usr/bin/sudo -E ) apt-get update && ( execute $( [[ $CURRENT_USER == "root" ]] || echo /usr/bin/sudo -E ) ${APT_GET} install -y $1 || true )
+  fi
+  DRYRUN=$ORIGINAL_DRYRUN
+  true # Required; Weird behavior without it
+}
+
+function uninstall-package() {
+  ORIGINAL_DRYRUN=$DRYRUN
+  [[ ! -z $2 ]] && DRYRUN=false
+  if [[ $ARCH == "Linux" ]]; then
+    ( [[ $NAME =~ "Amazon Linux" ]] || [[ $NAME == "CentOS Linux" ]] ) && ( execute $( [[ $CURRENT_USER == "root" ]] || echo /usr/bin/sudo -E ) ${YUM} remove -y $1 || true )
+    [[ $NAME =~ "Ubuntu" ]] && ( execute $( [[ $CURRENT_USER == "root" ]] || echo /usr/bin/sudo -E ) ${APT_GET} remove -y $1 || true )
+  fi
+  DRYRUN=$ORIGINAL_DRYRUN
+  true
 }
