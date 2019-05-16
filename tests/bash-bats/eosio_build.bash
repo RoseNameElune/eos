@@ -11,7 +11,7 @@ TEST_LABEL="[eosio_build]"
 # A helper function is available to show output and status: `debug`
 @test "${TEST_LABEL} > Testing arguments/options" {
 
-    if [[ $ARCH == "Linux" ]] && ( [[ $NAME =~ "Amazon Linux" ]] || [[ $NAME == "CentOS Linux" ]] ); then
+    if [[ $NAME =~ "Amazon Linux" ]] || [[ $NAME == "CentOS Linux" ]]; then
         # which package isn't installed
         uninstall-package which BYPASS_DRYRUN &>/dev/null
         run bash -c "printf \"n\nn\n\" | ./scripts/eosio_build.bash"

@@ -21,5 +21,6 @@ function teardown() { # teardown is run once after each test, even if it fails
   uninstall-package which BYPASS_DRYRUN &>/dev/null
   uninstall-package devtoolset-7* BYPASS_DRYRUN &>/dev/null
   uninstall-package centos-release-scl BYPASS_DRYRUN &>/dev/null
+  uninstall-package gcc-c++ BYPASS_DRYRUN &>/dev/null
 }
 trap teardown EXIT

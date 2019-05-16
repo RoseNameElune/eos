@@ -112,16 +112,16 @@ fi
 
 # Test that which is on the system before proceeding
 if ! which ls &>/dev/null; then
-    while true; do
-        [[ $NONINTERACTIVE == false ]] && printf "${COLOR_YELLOW}EOSIO compiler checks require the 'which' package: Would you like for us to install it? (y/n)?${COLOR_NC}" && read -p " " PROCEED
-        echo ""
-        case $PROCEED in
-            "" ) echo "What would you like to do?";;
-            0 | true | [Yy]* ) install-package which BYPASS_DRYRUN &>/dev/null; break;;
-            1 | false | [Nn]* ) echo "${COLOR_RED}Please install the 'which' command before proceeding!${COLOR_NC}"; exit 1;;
-            * ) echo "Please type 'y' for yes or 'n' for no.";;
-        esac
-    done
+   while true; do
+      [[ $NONINTERACTIVE == false ]] && printf "${COLOR_YELLOW}EOSIO compiler checks require the 'which' package: Would you like for us to install it? (y/n)?${COLOR_NC}" && read -p " " PROCEED
+      echo ""
+      case $PROCEED in
+         "" ) echo "What would you like to do?";;
+         0 | true | [Yy]* ) install-package which BYPASS_DRYRUN &>/dev/null; break;;
+         1 | false | [Nn]* ) echo "${COLOR_RED}Please install the 'which' command before proceeding!${COLOR_NC}"; exit 1;;
+         * ) echo "Please type 'y' for yes or 'n' for no.";;
+      esac
+   done
 fi
 
 echo "Beginning build version: ${SCRIPT_VERSION}"
